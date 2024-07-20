@@ -6,6 +6,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
 </head>
 <body>
@@ -17,11 +18,14 @@
             maxZoom: 19,
         }).addTo(map);
 
-        // Load TensorFlow.js and the speech commands model
-        const recognizer = speechCommands.create('BROWSER_FFT');
-        recognizer.ensureModelLoaded().then(() => {
-            console.log('Model loaded');
-            startListening();
+        // Set TensorFlow.js backend to WebGL for GPU acceleration
+        tf.setBackend('webgl').then(() => {
+            // Load TensorFlow.js and the speech commands model
+            const recognizer = speechCommands.create('BROWSER_FFT');
+            recognizer.ensureModelLoaded().then(() => {
+                console.log('Model loaded');
+                startListening();
+            });
         });
 
         // Function to start listening for voice commands
@@ -53,12 +57,14 @@
             } else if (command.includes('add marker at')) {
                 const location = command.replace('add marker at', '').trim();
                 addMarker(location);
+            } else if (command.includes('pan to')) {
+                const direction = command.replace('pan to', '').trim();
+                panMap(direction);
             }
         }
 
         // Define geospatial data interaction functions
         function zoomToLocation(location) {
-            // Example: Zoom to predefined locations
             const locations = {
                 'Ahmedabad': [23.0225, 72.5714],
                 'New York': [40.7128, -74.0060],
@@ -72,19 +78,16 @@
         }
 
         function showLayer(layer) {
-            // Example: Show a specific layer
-            // Implement the logic to show layers
             console.log(`Showing layer: ${layer}`);
+            // Implement the logic to show layers
         }
 
         function hideLayer(layer) {
-            // Example: Hide a specific layer
-            // Implement the logic to hide layers
             console.log(`Hiding layer: ${layer}`);
+            // Implement the logic to hide layers
         }
 
         function addMarker(location) {
-            // Example: Add a marker at predefined locations
             const locations = {
                 'Ahmedabad': [23.0225, 72.5714],
                 'New York': [40.7128, -74.0060],
@@ -96,6 +99,21 @@
                     .openPopup();
             } else {
                 console.log('Location not recognized');
+            }
+        }
+
+        function panMap(direction) {
+            const panDistance = 200; // Pan distance in pixels
+            if (direction === 'up') {
+                map.panBy([0, -panDistance]);
+            } else if (direction === 'down') {
+                map.panBy([0, panDistance]);
+            } else if (direction === 'left') {
+                map.panBy([-panDistance, 0]);
+            } else if (direction === 'right') {
+                map.panBy([panDistance, 0]);
+            } else {
+                console.log('Direction not recognized');
             }
         }
     </script>
