@@ -1,19 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <title>Voice-Enabled GIS</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-    crossorigin=""/>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
 </head>
-
 <body>
     <div id="map" style="height: 500px;"></div>
     <button id="startListening">Start Voice Commands</button>
@@ -25,19 +20,23 @@
         }).addTo(map);
 
         // Set TensorFlow.js backend to WebGL for GPU acceleration
-        tf.setBackend('webgl').then(() => {
+        tf.setBackend('webgl').then(async () => {
             // Load TensorFlow.js and the speech commands model
             const recognizer = speechCommands.create('BROWSER_FFT');
-            recognizer.ensureModelLoaded().then(() => {
-                console.log('Model loaded');
-                document.getElementById('startListening').disabled = false;
-            });
+            await recognizer.ensureModelLoaded();
+
+            console.log('Model loaded');
+            document.getElementById('startListening').disabled = false;
+
+            // Pre-define command words
+            const commands = ['zoom to', 'show', 'hide', 'zoom in', 'zoom out', 'add marker at', 'pan to'];
 
             // Function to start listening for voice commands
             function startListening() {
                 recognizer.listen(result => {
                     const words = recognizer.wordLabels();
                     const command = words[result.scores.indexOf(Math.max(...result.scores))];
+                    console.log('Recognized command:', command);
                     processCommand(command);
                 }, {
                     probabilityThreshold: 0.75
@@ -59,6 +58,7 @@
 
             // Define a function to process voice commands
             function processCommand(command) {
+                console.log('Processing command:', command);
                 if (command.includes('zoom to')) {
                     const location = command.replace('zoom to', '').trim();
                     zoomToLocation(location);
@@ -78,11 +78,14 @@
                 } else if (command.includes('pan to')) {
                     const direction = command.replace('pan to', '').trim();
                     panMap(direction);
+                } else {
+                    console.log('Unrecognized command');
                 }
             }
 
             // Define geospatial data interaction functions
             function zoomToLocation(location) {
+                console.log('Zooming to location:', location);
                 const locations = {
                     'Ahmedabad': [23.0225, 72.5714],
                     'New York': [40.7128, -74.0060],
@@ -96,16 +99,17 @@
             }
 
             function showLayer(layer) {
-                console.log(`Showing layer: ${layer}`);
+                console.log('Showing layer:', layer);
                 // Implement the logic to show layers
             }
 
             function hideLayer(layer) {
-                console.log(`Hiding layer: ${layer}`);
+                console.log('Hiding layer:', layer);
                 // Implement the logic to hide layers
             }
 
             function addMarker(location) {
+                console.log('Adding marker at location:', location);
                 const locations = {
                     'Ahmedabad': [23.0225, 72.5714],
                     'New York': [40.7128, -74.0060],
@@ -121,6 +125,7 @@
             }
 
             function panMap(direction) {
+                console.log('Panning map to direction:', direction);
                 const panDistance = 200; // Pan distance in pixels
                 if (direction === 'up') {
                     map.panBy([0, -panDistance]);
@@ -137,5 +142,4 @@
         });
     </script>
 </body>
-
 </html>
