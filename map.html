@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Voice-Enabled GIS</title>
@@ -9,8 +10,10 @@
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/speech-commands"></script>
 </head>
+
 <body>
     <div id="map" style="height: 500px;"></div>
+    <button id="startListening">Start Voice Commands</button>
     <script>
         // Initialize the map
         const map = L.map('map').setView([0, 0], 2);
@@ -24,98 +27,112 @@
             const recognizer = speechCommands.create('BROWSER_FFT');
             recognizer.ensureModelLoaded().then(() => {
                 console.log('Model loaded');
-                startListening();
+                document.getElementById('startListening').disabled = false;
             });
+
+            // Function to start listening for voice commands
+            function startListening() {
+                recognizer.listen(result => {
+                    const words = recognizer.wordLabels();
+                    const command = words[result.scores.indexOf(Math.max(...result.scores))];
+                    processCommand(command);
+                }, {
+                    probabilityThreshold: 0.75
+                });
+            }
+
+            // Request microphone access and start listening
+            document.getElementById('startListening').addEventListener('click', () => {
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        startListening();
+                        document.getElementById('startListening').innerText = 'Listening...';
+                        document.getElementById('startListening').disabled = true;
+                    })
+                    .catch(err => {
+                        console.error('Microphone access denied:', err);
+                    });
+            });
+
+            // Define a function to process voice commands
+            function processCommand(command) {
+                if (command.includes('zoom to')) {
+                    const location = command.replace('zoom to', '').trim();
+                    zoomToLocation(location);
+                } else if (command.includes('show')) {
+                    const layer = command.replace('show', '').trim();
+                    showLayer(layer);
+                } else if (command.includes('hide')) {
+                    const layer = command.replace('hide', '').trim();
+                    hideLayer(layer);
+                } else if (command === 'zoom in') {
+                    map.zoomIn();
+                } else if (command === 'zoom out') {
+                    map.zoomOut();
+                } else if (command.includes('add marker at')) {
+                    const location = command.replace('add marker at', '').trim();
+                    addMarker(location);
+                } else if (command.includes('pan to')) {
+                    const direction = command.replace('pan to', '').trim();
+                    panMap(direction);
+                }
+            }
+
+            // Define geospatial data interaction functions
+            function zoomToLocation(location) {
+                const locations = {
+                    'Ahmedabad': [23.0225, 72.5714],
+                    'New York': [40.7128, -74.0060],
+                    'London': [51.5074, -0.1278]
+                };
+                if (locations[location]) {
+                    map.setView(locations[location], 10);
+                } else {
+                    console.log('Location not recognized');
+                }
+            }
+
+            function showLayer(layer) {
+                console.log(`Showing layer: ${layer}`);
+                // Implement the logic to show layers
+            }
+
+            function hideLayer(layer) {
+                console.log(`Hiding layer: ${layer}`);
+                // Implement the logic to hide layers
+            }
+
+            function addMarker(location) {
+                const locations = {
+                    'Ahmedabad': [23.0225, 72.5714],
+                    'New York': [40.7128, -74.0060],
+                    'London': [51.5074, -0.1278]
+                };
+                if (locations[location]) {
+                    L.marker(locations[location]).addTo(map)
+                        .bindPopup(`Marker at ${location}`)
+                        .openPopup();
+                } else {
+                    console.log('Location not recognized');
+                }
+            }
+
+            function panMap(direction) {
+                const panDistance = 200; // Pan distance in pixels
+                if (direction === 'up') {
+                    map.panBy([0, -panDistance]);
+                } else if (direction === 'down') {
+                    map.panBy([0, panDistance]);
+                } else if (direction === 'left') {
+                    map.panBy([-panDistance, 0]);
+                } else if (direction === 'right') {
+                    map.panBy([panDistance, 0]);
+                } else {
+                    console.log('Direction not recognized');
+                }
+            }
         });
-
-        // Function to start listening for voice commands
-        function startListening() {
-            recognizer.listen(result => {
-                const words = recognizer.wordLabels();
-                const command = words[result.scores.indexOf(Math.max(...result.scores))];
-                processCommand(command);
-            }, {
-                probabilityThreshold: 0.75
-            });
-        }
-
-        // Define a function to process voice commands
-        function processCommand(command) {
-            if (command.includes('zoom to')) {
-                const location = command.replace('zoom to', '').trim();
-                zoomToLocation(location);
-            } else if (command.includes('show')) {
-                const layer = command.replace('show', '').trim();
-                showLayer(layer);
-            } else if (command.includes('hide')) {
-                const layer = command.replace('hide', '').trim();
-                hideLayer(layer);
-            } else if (command === 'zoom in') {
-                map.zoomIn();
-            } else if (command === 'zoom out') {
-                map.zoomOut();
-            } else if (command.includes('add marker at')) {
-                const location = command.replace('add marker at', '').trim();
-                addMarker(location);
-            } else if (command.includes('pan to')) {
-                const direction = command.replace('pan to', '').trim();
-                panMap(direction);
-            }
-        }
-
-        // Define geospatial data interaction functions
-        function zoomToLocation(location) {
-            const locations = {
-                'Ahmedabad': [23.0225, 72.5714],
-                'New York': [40.7128, -74.0060],
-                'London': [51.5074, -0.1278]
-            };
-            if (locations[location]) {
-                map.setView(locations[location], 10);
-            } else {
-                console.log('Location not recognized');
-            }
-        }
-
-        function showLayer(layer) {
-            console.log(`Showing layer: ${layer}`);
-            // Implement the logic to show layers
-        }
-
-        function hideLayer(layer) {
-            console.log(`Hiding layer: ${layer}`);
-            // Implement the logic to hide layers
-        }
-
-        function addMarker(location) {
-            const locations = {
-                'Ahmedabad': [23.0225, 72.5714],
-                'New York': [40.7128, -74.0060],
-                'London': [51.5074, -0.1278]
-            };
-            if (locations[location]) {
-                L.marker(locations[location]).addTo(map)
-                    .bindPopup(`Marker at ${location}`)
-                    .openPopup();
-            } else {
-                console.log('Location not recognized');
-            }
-        }
-
-        function panMap(direction) {
-            const panDistance = 200; // Pan distance in pixels
-            if (direction === 'up') {
-                map.panBy([0, -panDistance]);
-            } else if (direction === 'down') {
-                map.panBy([0, panDistance]);
-            } else if (direction === 'left') {
-                map.panBy([-panDistance, 0]);
-            } else if (direction === 'right') {
-                map.panBy([panDistance, 0]);
-            } else {
-                console.log('Direction not recognized');
-            }
-        }
     </script>
 </body>
+
 </html>
